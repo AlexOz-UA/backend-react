@@ -6,8 +6,6 @@ import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 dotenv.config();
 
-//hello
-
 const app = express();
 const db = mysql.createConnection({
   host: "localhost",
