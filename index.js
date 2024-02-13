@@ -668,7 +668,7 @@ app.post("/user-login", (req, res) => {
             { id: user.id, username: user.username },
             process.env.JWT_SECRET_KEY,
             {
-              expiresIn: 1800,
+              expiresIn: 604800,
             }
           );
           db.query(
