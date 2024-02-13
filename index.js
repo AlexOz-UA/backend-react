@@ -8,10 +8,10 @@ dotenv.config();
 
 const app = express();
 const db = mysql.createConnection({
-  host: "localhost",
-  user: "mysql",
-  password: "AleXKlanS1)",
-  database: "myfirstdb",
+  host: "monorail.proxy.rlwy.net",
+  user: "root",
+  password: process.env.DB_PASSWORD,
+  database: "railway",
 });
 
 app.use(express.json());
@@ -41,48 +41,49 @@ const verifyJWT = (req, res, next) => {
 app.get("/posts", verifyJWT, (req, res) => {
   const queryAllPostsSelect = "SELECT * FROM post";
   db.query(queryAllPostsSelect, (err, results) => {
-    try{
+    try {
       const blogsWithPopularity = [];
 
       results.forEach((blog, index) => {
         getLikes(blog.id, (err, numLikes) => {
           if (err) {
-            return res.status(500).json({ error: 'Error fetching likes' });
+            return res.status(500).json({ error: "Error fetching likes" });
           }
-      
-            const blogWithPopularity = {
-              id: blog.id,
-              name: blog.name,
-              body: blog.body,
-              creator: blog.creator,
-              num_likes: numLikes,
-            };
-      
-            blogsWithPopularity.push(blogWithPopularity);
-      
-            if (index === results.length - 1) {
-              res.status(200).json(blogsWithPopularity);
-            }
+
+          const blogWithPopularity = {
+            id: blog.id,
+            name: blog.name,
+            body: blog.body,
+            creator: blog.creator,
+            num_likes: numLikes,
+          };
+
+          blogsWithPopularity.push(blogWithPopularity);
+
+          if (index === results.length - 1) {
+            res.status(200).json(blogsWithPopularity);
+          }
         });
       });
-    }catch(error){
-      console.error("You have an error: " + err)
+    } catch (error) {
+      console.error("You have an error: " + err);
     }
-  })
+  });
 });
 
 function getLikes(blogId, callback) {
-  const queryGetLikes = 'SELECT COUNT(*) AS num_likes FROM post_likes WHERE post_id = ?';
+  const queryGetLikes =
+    "SELECT COUNT(*) AS num_likes FROM post_likes WHERE post_id = ?";
   db.query(queryGetLikes, [blogId], (err, results) => {
     if (err) {
-      console.error('Error fetching likes:', err);
+      console.error("Error fetching likes:", err);
       return callback(err, null);
     }
     callback(null, results[0].num_likes);
   });
 }
 
-app.get('/pagination/popular-blogs/:page/:limit', (req, res) => {
+app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
   const page = req.params.page;
   const limit = req.params.limit;
   const offset = (page - 1) * limit;
@@ -94,51 +95,56 @@ app.get('/pagination/popular-blogs/:page/:limit', (req, res) => {
   const queryTotalPopularBlogs = `
     SELECT COUNT(*) AS totalItems FROM post;`;
 
-  db.query(queryPopularBlogsSelect, [parseInt(limit), offset], (err, results) => {
-    if (err) {
-      console.log(err);
-      return;
-    }
-
-    db.query(queryTotalPopularBlogs, (err, data) => {
+  db.query(
+    queryPopularBlogsSelect,
+    [parseInt(limit), offset],
+    (err, results) => {
       if (err) {
         console.log(err);
         return;
       }
 
-      const totalItems = data[0].totalItems;
-      const blogsWithPopularity = [];
+      db.query(queryTotalPopularBlogs, (err, data) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
 
-      results.forEach((blog) => {
-        const queryLikesCount = `
+        const totalItems = data[0].totalItems;
+        const blogsWithPopularity = [];
+
+        results.forEach((blog) => {
+          const queryLikesCount = `
           SELECT COUNT(*) AS num_likes
           FROM post_likes
           WHERE post_id = ?`;
 
-        db.query(queryLikesCount, [blog.id], (err, likeData) => {
-          if (err) {
-            console.log(err);
-            return;
-          }
+          db.query(queryLikesCount, [blog.id], (err, likeData) => {
+            if (err) {
+              console.log(err);
+              return;
+            }
 
-          const blogWithPopularity = {
-            id: blog.id,
-            name: blog.name,
-            body: blog.body,
-            creator: blog.creator,
-            num_likes: likeData[0].num_likes,
-          };
-          blogsWithPopularity.push(blogWithPopularity);
+            const blogWithPopularity = {
+              id: blog.id,
+              name: blog.name,
+              body: blog.body,
+              creator: blog.creator,
+              num_likes: likeData[0].num_likes,
+            };
+            blogsWithPopularity.push(blogWithPopularity);
 
-          if (blogsWithPopularity.length === results.length) {
-            res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
-          }
+            if (blogsWithPopularity.length === results.length) {
+              res
+                .status(200)
+                .json({ sortedBlogs: blogsWithPopularity, totalItems });
+            }
+          });
         });
       });
-    });
-  });
+    }
+  );
 });
-
 
 app.get("/pagination", (req, res) => {
   const page = req.query.page;
@@ -147,28 +153,31 @@ app.get("/pagination", (req, res) => {
 
   const queryPaginationPostsSelect = "SELECT * FROM post LIMIT ? OFFSET ?";
 
-  db.query(queryPaginationPostsSelect, [parseInt(limit), offset], (err, results) => {
-    if (err) {
-      console.log(err);
-      return;
-    }
-
-    const totalItemsQuery = "SELECT COUNT(*) AS totalItems FROM post";
-    db.query(totalItemsQuery, (err, data) => {
+  db.query(
+    queryPaginationPostsSelect,
+    [parseInt(limit), offset],
+    (err, results) => {
       if (err) {
         console.log(err);
         return;
       }
 
-      const totalItems = data[0].totalItems;
-      const blogsWithPopularity = [];
+      const totalItemsQuery = "SELECT COUNT(*) AS totalItems FROM post";
+      db.query(totalItemsQuery, (err, data) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
 
-      results.forEach((blog, index) => {
-        getLikes(blog.id, (err, numLikes) => {
-          if (err) {
-            return res.status(500).json({ error: 'Error fetching likes' });
-          }
-      
+        const totalItems = data[0].totalItems;
+        const blogsWithPopularity = [];
+
+        results.forEach((blog, index) => {
+          getLikes(blog.id, (err, numLikes) => {
+            if (err) {
+              return res.status(500).json({ error: "Error fetching likes" });
+            }
+
             const blogWithPopularity = {
               id: blog.id,
               name: blog.name,
@@ -176,16 +185,19 @@ app.get("/pagination", (req, res) => {
               creator: blog.creator,
               num_likes: numLikes,
             };
-      
+
             blogsWithPopularity.push(blogWithPopularity);
-      
+
             if (index === results.length - 1) {
-              res.status(200).json({sortedBlogs: blogsWithPopularity, totalItems});
+              res
+                .status(200)
+                .json({ sortedBlogs: blogsWithPopularity, totalItems });
             }
+          });
         });
       });
-    });
-  });
+    }
+  );
 });
 
 app.post("/pagination/categories", (req, res) => {
@@ -205,53 +217,59 @@ app.post("/pagination/categories", (req, res) => {
     SELECT COUNT(DISTINCT post.id) AS totalItems FROM post
     WHERE id IN (SELECT post_id FROM categories_post WHERE categories_id IN (${categoryIds}));`;
 
-  db.query(queryCategoryFilterPaginationSelect, [parseInt(limit), offset], (err, results) => {
-    if (err) {
-      console.log(err);
-      return;
-    }
-
-    db.query(queryTotalCategoryBlogs, (err, data) => {
+  db.query(
+    queryCategoryFilterPaginationSelect,
+    [parseInt(limit), offset],
+    (err, results) => {
       if (err) {
         console.log(err);
         return;
       }
 
-      const totalItems = data[0].totalItems;
-      const blogsWithPopularity = [];
+      db.query(queryTotalCategoryBlogs, (err, data) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
 
-      results.forEach((blog) => {
-        const queryLikesCount = `
+        const totalItems = data[0].totalItems;
+        const blogsWithPopularity = [];
+
+        results.forEach((blog) => {
+          const queryLikesCount = `
           SELECT COUNT(*) AS num_likes FROM post_likes WHERE post_id = ?`;
 
-        db.query(queryLikesCount, [blog.id], (err, likeData) => {
-          if (err) {
-            console.log(err);
-            return;
-          }
+          db.query(queryLikesCount, [blog.id], (err, likeData) => {
+            if (err) {
+              console.log(err);
+              return;
+            }
 
-          const blogWithPopularity = {
-            id: blog.id,
-            name: blog.name,
-            body: blog.body,
-            creator: blog.creator,
-            num_likes: likeData[0].num_likes,
-          };
-          blogsWithPopularity.push(blogWithPopularity);
+            const blogWithPopularity = {
+              id: blog.id,
+              name: blog.name,
+              body: blog.body,
+              creator: blog.creator,
+              num_likes: likeData[0].num_likes,
+            };
+            blogsWithPopularity.push(blogWithPopularity);
 
-          if (blogsWithPopularity.length === results.length) {
-            res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
-          }
+            if (blogsWithPopularity.length === results.length) {
+              res
+                .status(200)
+                .json({ sortedBlogs: blogsWithPopularity, totalItems });
+            }
+          });
         });
       });
-    });
-  });
+    }
+  );
 });
 
 app.post("/pagination/search", (req, res) => {
   const page = req.query.page;
   const limit = req.query.limit;
-  const postIds = req.body.data.postIds.join(','); 
+  const postIds = req.body.data.postIds.join(",");
   const offset = (page - 1) * limit;
 
   const querySearchPaginationSelect = `
@@ -264,49 +282,54 @@ app.post("/pagination/search", (req, res) => {
     SELECT COUNT(*) AS totalItems FROM post
     WHERE id IN (${postIds});`;
 
-  db.query(querySearchPaginationSelect, [parseInt(limit), offset], (err, results) => {
-    if (err) {
-      console.log(err);
-      return;
-    }
-
-    db.query(queryTotalSearchBlogs, (err, data) => {
+  db.query(
+    querySearchPaginationSelect,
+    [parseInt(limit), offset],
+    (err, results) => {
       if (err) {
         console.log(err);
         return;
       }
 
-      const totalItems = data[0].totalItems;
-      const blogsWithPopularity = [];
+      db.query(queryTotalSearchBlogs, (err, data) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
 
-      results.forEach((blog) => {
-        const queryLikesCount = `
+        const totalItems = data[0].totalItems;
+        const blogsWithPopularity = [];
+
+        results.forEach((blog) => {
+          const queryLikesCount = `
           SELECT COUNT(*) AS num_likes FROM post_likes WHERE post_id = ?`;
 
-        db.query(queryLikesCount, [blog.id], (err, likeData) => {
-          if (err) {
-            console.log(err);
-            return;
-          }
+          db.query(queryLikesCount, [blog.id], (err, likeData) => {
+            if (err) {
+              console.log(err);
+              return;
+            }
 
-          const blogWithPopularity = {
-            id: blog.id,
-            name: blog.name,
-            body: blog.body,
-            creator: blog.creator,
-            num_likes: likeData[0].num_likes,
-          };
-          blogsWithPopularity.push(blogWithPopularity);
+            const blogWithPopularity = {
+              id: blog.id,
+              name: blog.name,
+              body: blog.body,
+              creator: blog.creator,
+              num_likes: likeData[0].num_likes,
+            };
+            blogsWithPopularity.push(blogWithPopularity);
 
-          if (blogsWithPopularity.length === results.length) {
-            res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
-          }
+            if (blogsWithPopularity.length === results.length) {
+              res
+                .status(200)
+                .json({ sortedBlogs: blogsWithPopularity, totalItems });
+            }
+          });
         });
       });
-    });
-  });
+    }
+  );
 });
-
 
 app.get("/posts-liked/:user_id", verifyJWT, (req, res) => {
   const queryLikedPostsSelect = `SELECT * FROM post_likes WHERE user_id = ${req.params.user_id}`;
@@ -561,6 +584,7 @@ app.post("/posts-add", (req, res) => {
     else {
       db.query(`SELECT MAX(id) AS next_id FROM post`, (err, data) => {
         let values = "";
+        console.log(payload.categoryId);
         payload.categoryId.forEach((element) => {
           values += `(${data[0].next_id}, ${element}),`;
         });
@@ -587,19 +611,35 @@ app.post("/comment/:id", (req, res) => {
 });
 
 app.post("/user-register", (req, res) => {
-  const payload = req.body.data;
-  const hashedPassword = bcrypt.hashSync(payload.password, 10);
-  const queryUserAdd =
-    "INSERT into user (`username`, `email`, `password`) VALUES (?)";
-  const values = [payload.username, payload.email, hashedPassword];
-  queryRunWithData(queryUserAdd, values, res);
+  var payload = req.body.data;
+  db.query(
+    `SELECT * FROM patron WHERE email = "${payload.email}" OR username = "${payload.username}"`,
+    (err, data) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      if (data == "") {
+        const hashedPassword = bcrypt.hashSync(payload.password, 10);
+        const queryUserAdd =
+          "INSERT into patron (`username`, `email`, `password`) VALUES (?)";
+        const values = [payload.username, payload.email, hashedPassword];
+        queryRunWithData(queryUserAdd, values, res);
+      }
+
+      if (data != "") {
+        res.status(200).send({message: "This user already exists."});
+        return;
+      }
+    }
+  );
 });
 
 app.post("/user-login", (req, res) => {
   const { username, password } = req.body.data;
 
   db.query(
-    "SELECT * FROM user WHERE username = ?",
+    "SELECT * FROM patron WHERE username = ?",
     [username],
     (error, results) => {
       if (error) {
@@ -691,8 +731,8 @@ app.delete("/comment-delete", (req, res) => {
 
 const queryRun = (queryString, res) => {
   const dbQuery = db.query(queryString, (err, data) => {
-    if (err) return res.json(err);
-    res.status(200).json(data);
+  if (err) return res.json(err);
+  res.status(200).json(data);
     return data;
   });
   return dbQuery;
