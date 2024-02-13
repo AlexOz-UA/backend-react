@@ -1,5 +1,5 @@
 import express, { query } from "express";
-import mysql from "mysql";
+import mysql from "mysql2";
 import cors from "cors";
 import jwt, { verify } from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -7,16 +7,19 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-const db = mysql.createConnection({
-  host: "monorail.proxy.rlwy.net",
+const db = mysql.createPool({
+  host: 'monorail.proxy.rlwy.net',
   port: 24206,
-  user: "root",
+  user: 'root',
   password: process.env.DB_PASSWORD,
-  database: "railway",
+  database: 'railway',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 const port = process.env.PORT || 3000;
 
-db.connect((err) => {
+db.getConnection((err) => {
   if (err) {
     console.error('Error connecting to MySQL:', err);
   } else {
