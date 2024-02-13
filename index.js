@@ -8,7 +8,7 @@ dotenv.config();
 
 const app = express();
 const db = mysql.createConnection({
-  host: "monorail.proxy.rlwy.net:24206",
+  host: "monorail.proxy.rlwy.net",
   user: "root",
   password: process.env.DB_PASSWORD,
   database: "railway",
