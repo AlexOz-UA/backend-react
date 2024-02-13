@@ -13,6 +13,7 @@ const db = mysql.createConnection({
   password: process.env.DB_PASSWORD,
   database: "railway",
 });
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -747,6 +748,6 @@ const queryRunWithData = (queryString, values, res) => {
   return dbQuery;
 };
 
-app.listen(8800, () => {
-  console.log("Connected to backend!");
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
