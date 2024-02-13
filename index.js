@@ -96,7 +96,7 @@ function getLikes(blogId, callback) {
   });
 }
 
-app.get("/pagination/popular-blogs/:page/:limit", async (req, res) => {
+app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
   const page = req.params.page;
   const limit = req.params.limit;
   const offset = (page - 1) * limit;
@@ -108,35 +108,56 @@ app.get("/pagination/popular-blogs/:page/:limit", async (req, res) => {
   const queryTotalPopularBlogs = `
     SELECT COUNT(*) AS totalItems FROM post;`;
 
-  try {
-    const [results] = await db.query(queryPopularBlogsSelect, [parseInt(limit), offset]);
+  db.query(
+    queryPopularBlogsSelect,
+    [parseInt(limit), offset],
+    (err, results) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
 
-    const totalItems = (await db.query(queryTotalPopularBlogs))[0][0].totalItems;
-    
-    const blogsWithPopularity = await Promise.all(
-      results.map(async (blog) => {
-        const [likeData] = await db.query(
-          "SELECT COUNT(*) AS num_likes FROM post_likes WHERE post_id = ?",
-          [blog.id]
-        );
+      db.query(queryTotalPopularBlogs, (err, data) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
 
-        return {
-          id: blog.id,
-          name: blog.name,
-          body: blog.body,
-          creator: blog.creator,
-          num_likes: likeData[0].num_likes,
-        };
-      })
-    );
+        const totalItems = data[0].totalItems;
+        const blogsWithPopularity = [];
 
-    res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Internal Server Error");
-  }
+        results.forEach((blog) => {
+          const queryLikesCount = `
+          SELECT COUNT(*) AS num_likes
+          FROM post_likes
+          WHERE post_id = ?`;
+
+          db.query(queryLikesCount, [blog.id], (err, likeData) => {
+            if (err) {
+              console.log(err);
+              return;
+            }
+
+            const blogWithPopularity = {
+              id: blog.id,
+              name: blog.name,
+              body: blog.body,
+              creator: blog.creator,
+              num_likes: likeData[0].num_likes,
+            };
+            blogsWithPopularity.push(blogWithPopularity);
+
+            if (blogsWithPopularity.length === results.length) {
+              res
+                .status(200)
+                .json({ sortedBlogs: blogsWithPopularity, totalItems });
+            }
+          });
+        });
+      });
+    }
+  );
 });
-
 
 app.get("/pagination", (req, res) => {
   const page = req.query.page;
