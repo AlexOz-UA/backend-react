@@ -23,6 +23,7 @@
     "heroku": "^8.9.0",
     "jsonwebtoken": "^9.0.0",
     "mysql": "^2.18.1",
+    "mysql2": "^3.9.1",
     "nodemon": "^2.0.22"
   }
 }
