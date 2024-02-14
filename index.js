@@ -102,16 +102,13 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
   const offset = (page - 1) * limit;
 
   const queryPopularBlogsSelect = `
-    SELECT id, name, body, creator FROM post 
-    ORDER BY (SELECT COUNT(*) FROM post_likes WHERE post.id = post_likes.post_id) DESC LIMIT ? OFFSET ?;`;
+    SELECT id, name, body, creator FROM post ORDER BY 
+    (SELECT COUNT(*) FROM post_likes WHERE post.id = post_likes.post_id) DESC LIMIT ? OFFSET ?;`;
 
   const queryTotalPopularBlogs = `
     SELECT COUNT(*) AS totalItems FROM post;`;
 
-  db.query(
-    queryPopularBlogsSelect,
-    [parseInt(limit), offset],
-    (err, results) => {
+  db.query(queryPopularBlogsSelect,[parseInt(limit), offset],(err, results) => {
       if (err) {
         console.log(err);
         return;
@@ -127,14 +124,10 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
         const blogsWithPopularity = [];
         
         results.forEach((blog) => {
-          const queryLikesCount = `
-          SELECT COUNT(*) AS num_likes
-          FROM post_likes
-          WHERE post_id = ?`;
-
-          db.query(queryLikesCount, [blog.id], (err, likeData) => {
+          console.log("RESULTS: " + results)          
+          getLikes(blog.id, (err, numLikes) => {
             if (err) {
-              console.log(err);
+              return res.status(500).json({ error: "Error fetching likes" });
             }
 
             const blogWithPopularity = {
@@ -142,7 +135,7 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
               name: blog.name,
               body: blog.body,
               creator: blog.creator,
-              num_likes: likeData[0].num_likes,
+              num_likes: numLikes,
             };
             blogsWithPopularity.push(blogWithPopularity);
 
@@ -184,8 +177,6 @@ app.get("/pagination", (req, res) => {
             if (err) {
               return res.status(500).json({ error: "Error fetching likes" });
             }
-            console.log("RESULTS: " + JSON.stringify(results));
-            console.log("INDEX AND NUM LIKES: " + index, numLikes);
             const blogWithPopularity = {
               id: blog.id,
               name: blog.name,
