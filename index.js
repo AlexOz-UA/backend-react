@@ -187,6 +187,7 @@ app.get("/pagination", (req, res) => {
             if (err) {
               return res.status(500).json({ error: "Error fetching likes" });
             }
+            console.log("RESULTS: " + results);
             console.log("INDEX AND NUM LIKES: " + index, numLikes);
             const blogWithPopularity = {
               id: blog.id,
@@ -197,15 +198,10 @@ app.get("/pagination", (req, res) => {
             };
 
             blogsWithPopularity.push(blogWithPopularity);
-
-            if (index === results.length - 1) {
-              console.log(blogsWithPopularity)
-              res
-                .status(200)
-                .json({ sortedBlogs: blogsWithPopularity, totalItems });
-            }
           });
         });
+          console.log(blogsWithPopularity)
+          res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
       });
     }
   );
