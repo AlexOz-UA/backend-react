@@ -123,13 +123,11 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
         const totalItems = data[0].totalItems;
         const blogsWithPopularity = [];
         
-        results.forEach((blog) => {
-          console.log("RESULTS: " + JSON.stringify(results))          
+        results.forEach((blog, index) => {
           getLikes(blog.id, (err, numLikes) => {
             if (err) {
               return res.status(500).json({ error: "Error fetching likes" });
             }
-
             const blogWithPopularity = {
               id: blog.id,
               name: blog.name,
@@ -137,9 +135,10 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
               creator: blog.creator,
               num_likes: numLikes,
             };
+
             blogsWithPopularity.push(blogWithPopularity);
-            console.log(blogsWithPopularity);
-            if (blogsWithPopularity.length == results.length) {
+
+            if(blogsWithPopularity.length == results.length){
               res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
             }
           });
