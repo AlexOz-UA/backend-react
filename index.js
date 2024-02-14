@@ -196,7 +196,7 @@ app.get("/pagination", (req, res) => {
 
             blogsWithPopularity.push(blogWithPopularity);
 
-            if(index == results.length - 1){
+            if(blogsWithPopularity.length == results.length){
               res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
             }
           });
