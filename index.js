@@ -125,7 +125,7 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
 
         const totalItems = data[0].totalItems;
         const blogsWithPopularity = [];
-
+        
         results.forEach((blog) => {
           const queryLikesCount = `
           SELECT COUNT(*) AS num_likes
@@ -135,7 +135,6 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
           db.query(queryLikesCount, [blog.id], (err, likeData) => {
             if (err) {
               console.log(err);
-              return;
             }
 
             const blogWithPopularity = {
@@ -147,10 +146,8 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
             };
             blogsWithPopularity.push(blogWithPopularity);
 
-            if (blogsWithPopularity.length === results.length) {
-              res
-                .status(200)
-                .json({ sortedBlogs: blogsWithPopularity, totalItems });
+            if (blogsWithPopularity.length == results.length) {
+              res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
             }
           });
         });
@@ -202,6 +199,7 @@ app.get("/pagination", (req, res) => {
             blogsWithPopularity.push(blogWithPopularity);
 
             if (index === results.length - 1) {
+              console.log(blogsWithPopularity)
               res
                 .status(200)
                 .json({ sortedBlogs: blogsWithPopularity, totalItems });
