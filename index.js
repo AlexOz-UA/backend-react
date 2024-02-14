@@ -124,7 +124,7 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
         const blogsWithPopularity = [];
         
         results.forEach((blog) => {
-          console.log("RESULTS: " + results)          
+          console.log("RESULTS: " + JSON.stringify(results))          
           getLikes(blog.id, (err, numLikes) => {
             if (err) {
               return res.status(500).json({ error: "Error fetching likes" });
