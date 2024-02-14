@@ -156,38 +156,59 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
   );
 });
 
-app.get("/pagination", async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
+app.get("/pagination", (req, res) => {
+  const page = req.query.page;
+  const limit = req.query.limit;
+  const offset = (page - 1) * limit;
 
-    const queryPaginationPostsSelect = "SELECT * FROM post LIMIT ? OFFSET ?";
-    const [results] = await db.query(queryPaginationPostsSelect, [limit, offset]);
+  const queryPaginationPostsSelect = "SELECT * FROM post LIMIT ? OFFSET ?";
 
-    const totalItemsQuery = "SELECT COUNT(*) AS totalItems FROM post";
-    const [data] = await db.query(totalItemsQuery);
-    const totalItems = data[0].totalItems;
+  db.query(
+    queryPaginationPostsSelect,
+    [parseInt(limit), offset],
+    (err, results) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
 
-    const blogsWithPopularity = await Promise.all(
-      results.map(async (blog) => {
-        const numLikes = await getLikes(blog.id);
-        return {
-          id: blog.id,
-          name: blog.name,
-          body: blog.body,
-          creator: blog.creator,
-          num_likes: numLikes,
-        };
-      })
-    );
+      const totalItemsQuery = "SELECT COUNT(*) AS totalItems FROM post";
+      db.query(totalItemsQuery, (err, data) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
 
-    console.log(blogsWithPopularity);
-    res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
+        const totalItems = data[0].totalItems;
+        const blogsWithPopularity = [];
+
+        results.forEach((blog, index) => {
+          getLikes(blog.id, (err, numLikes) => {
+            if (err) {
+              return res.status(500).json({ error: "Error fetching likes" });
+            }
+            console.log("INDEX AND NUM LIKES: " + index, numLikes);
+            const blogWithPopularity = {
+              id: blog.id,
+              name: blog.name,
+              body: blog.body,
+              creator: blog.creator,
+              num_likes: numLikes,
+            };
+
+            blogsWithPopularity.push(blogWithPopularity);
+
+            if (index === results.length - 1) {
+              console.log(blogsWithPopularity)
+              res
+                .status(200)
+                .json({ sortedBlogs: blogsWithPopularity, totalItems });
+            }
+          });
+        });
+      });
+    }
+  );
 });
 
 app.post("/pagination/categories", (req, res) => {
