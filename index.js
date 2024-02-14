@@ -368,9 +368,8 @@ app.post("/pagination/search", (req, res) => {
             blogsWithPopularity.push(blogWithPopularity);
 
             if (blogsWithPopularity.length === results.length) {
-              res
-                .status(200)
-                .json({ sortedBlogs: blogsWithPopularity, totalItems });
+              blogsWithPopularity.sort((a, b) => b.id - a.id);
+              res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
             }
           });
         });
