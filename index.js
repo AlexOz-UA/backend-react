@@ -214,10 +214,7 @@ app.post("/pagination/categories", (req, res) => {
     SELECT COUNT(DISTINCT post.id) AS totalItems FROM post
     WHERE id IN (SELECT post_id FROM categories_post WHERE categories_id IN (${categoryIds}));`;
 
-  db.query(
-    queryCategoryFilterPaginationSelect,
-    [parseInt(limit), offset],
-    (err, results) => {
+  db.query(queryCategoryFilterPaginationSelect, [parseInt(limit), offset], (err, results) => {
       if (err) {
         console.log(err);
         return;
@@ -248,6 +245,64 @@ app.post("/pagination/categories", (req, res) => {
             blogsWithPopularity.push(blogWithPopularity);
 
             if(blogsWithPopularity.length == results.length){
+              res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
+            }
+          });
+        });
+      });
+    }
+  );
+});
+
+app.post("/pagination/categories-popular", (req, res) => {
+  const page = req.query.page;
+  const limit = req.query.limit;
+  const offset = (page - 1) * limit;
+
+  const categoryIds = req.body.data.id;
+
+  const queryCategoryFilterPaginationSelect = `
+    SELECT id, name, body, creator FROM post
+    WHERE id IN (SELECT post_id FROM categories_post WHERE categories_id IN (${categoryIds}))
+    ORDER BY (SELECT COUNT(*) FROM post_likes WHERE post.id = post_likes.post_id) DESC
+    LIMIT ? OFFSET ?;`;
+
+  const queryTotalCategoryBlogs = `
+    SELECT COUNT(DISTINCT post.id) AS totalItems FROM post
+    WHERE id IN (SELECT post_id FROM categories_post WHERE categories_id IN (${categoryIds}));`;
+
+  db.query(queryCategoryFilterPaginationSelect, [parseInt(limit), offset], (err, results) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+
+      db.query(queryTotalCategoryBlogs, (err, data) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
+
+        const totalItems = data[0].totalItems;
+        const blogsWithPopularity = [];
+        console.log("RESULTS: " + results);
+        results.forEach((blog, index) => {
+          getLikes(blog.id, (err, numLikes) => {
+            if (err) {
+              return res.status(500).json({ error: "Error fetching likes" });
+            }
+            const blogWithPopularity = {
+              id: blog.id,
+              name: blog.name,
+              body: blog.body,
+              creator: blog.creator,
+              num_likes: numLikes,
+            };
+
+            blogsWithPopularity.push(blogWithPopularity);
+
+            if(blogsWithPopularity.length == results.length){
+              blogsWithPopularity.sort((a, b) => b.num_likes - a.num_likes);
               res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
             }
           });
