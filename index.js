@@ -198,7 +198,7 @@ app.get("/pagination", (req, res) => {
 
             blogsWithPopularity.push(blogWithPopularity);
 
-            if (index === results.length - 1) {
+            if (index === results.length) {
               console.log(blogsWithPopularity)
               res
                 .status(200)
