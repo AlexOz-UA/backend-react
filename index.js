@@ -163,10 +163,7 @@ app.get("/pagination", (req, res) => {
 
   const queryPaginationPostsSelect = "SELECT * FROM post LIMIT ? OFFSET ?";
 
-  db.query(
-    queryPaginationPostsSelect,
-    [parseInt(limit), offset],
-    (err, results) => {
+  db.query(queryPaginationPostsSelect,[parseInt(limit), offset],(err, results) => {
       if (err) {
         console.log(err);
         return;
@@ -187,7 +184,7 @@ app.get("/pagination", (req, res) => {
             if (err) {
               return res.status(500).json({ error: "Error fetching likes" });
             }
-            console.log("RESULTS: " + results);
+            console.log("RESULTS: " + JSON.stringify(results));
             console.log("INDEX AND NUM LIKES: " + index, numLikes);
             const blogWithPopularity = {
               id: blog.id,
