@@ -139,6 +139,7 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
             blogsWithPopularity.push(blogWithPopularity);
 
             if(blogsWithPopularity.length == results.length){
+              blogsWithPopularity.sort((a, b) => b.num_likes - a.num_likes);
               res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
             }
           });
