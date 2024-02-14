@@ -198,10 +198,12 @@ app.get("/pagination", (req, res) => {
             };
 
             blogsWithPopularity.push(blogWithPopularity);
+
+            if(index == results.length - 1){
+              res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
+            }
           });
         });
-          console.log(blogsWithPopularity)
-          res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
       });
     }
   );
