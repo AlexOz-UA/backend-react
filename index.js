@@ -137,10 +137,8 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
               creator: blog.creator,
               num_likes: numLikes,
             };
-            console.log(blogWithPopularity);
-            console.log(blogsWithPopularity);
             blogsWithPopularity.push(blogWithPopularity);
-
+            console.log(blogsWithPopularity);
             if (blogsWithPopularity.length == results.length) {
               res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
             }
