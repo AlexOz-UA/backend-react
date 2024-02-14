@@ -231,30 +231,24 @@ app.post("/pagination/categories", (req, res) => {
 
         const totalItems = data[0].totalItems;
         const blogsWithPopularity = [];
-
-        results.forEach((blog) => {
-          const queryLikesCount = `
-          SELECT COUNT(*) AS num_likes FROM post_likes WHERE post_id = ?`;
-
-          db.query(queryLikesCount, [blog.id], (err, likeData) => {
+        console.log("RESULTS: " + results);
+        results.forEach((blog, index) => {
+          getLikes(blog.id, (err, numLikes) => {
             if (err) {
-              console.log(err);
-              return;
+              return res.status(500).json({ error: "Error fetching likes" });
             }
-
             const blogWithPopularity = {
               id: blog.id,
               name: blog.name,
               body: blog.body,
               creator: blog.creator,
-              num_likes: likeData[0].num_likes,
+              num_likes: numLikes,
             };
+
             blogsWithPopularity.push(blogWithPopularity);
 
-            if (blogsWithPopularity.length === results.length) {
-              res
-                .status(200)
-                .json({ sortedBlogs: blogsWithPopularity, totalItems });
+            if(blogsWithPopularity.length == results.length){
+              res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
             }
           });
         });
