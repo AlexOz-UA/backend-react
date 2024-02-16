@@ -156,7 +156,7 @@ app.get("/pagination/unpopular-blogs/:page/:limit", (req, res) => {
 
   const queryPopularBlogsSelect = `
     SELECT id, name, body, creator FROM post ORDER BY 
-    (SELECT COUNT(*) FROM post_likes WHERE post.id = post_likes.post_id) DESC LIMIT ? OFFSET ?;`;
+    (SELECT COUNT(*) FROM post_likes WHERE post.id = post_likes.post_id) ASC LIMIT ? OFFSET ?;`;
 
   const queryTotalPopularBlogs = `
     SELECT COUNT(*) AS totalItems FROM post;`;
