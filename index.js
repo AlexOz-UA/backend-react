@@ -149,6 +149,59 @@ app.get("/pagination/popular-blogs/:page/:limit", (req, res) => {
   );
 });
 
+app.get("/pagination/unpopular-blogs/:page/:limit", (req, res) => {
+  const page = req.params.page;
+  const limit = req.params.limit;
+  const offset = (page - 1) * limit;
+
+  const queryPopularBlogsSelect = `
+    SELECT id, name, body, creator FROM post ORDER BY 
+    (SELECT COUNT(*) FROM post_likes WHERE post.id = post_likes.post_id) DESC LIMIT ? OFFSET ?;`;
+
+  const queryTotalPopularBlogs = `
+    SELECT COUNT(*) AS totalItems FROM post;`;
+
+  db.query(queryPopularBlogsSelect,[parseInt(limit), offset],(err, results) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+
+      db.query(queryTotalPopularBlogs, (err, data) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
+
+        const totalItems = data[0].totalItems;
+        const blogsWithPopularity = [];
+        
+        results.forEach((blog, index) => {
+          getLikes(blog.id, (err, numLikes) => {
+            if (err) {
+              return res.status(500).json({ error: "Error fetching likes" });
+            }
+            const blogWithPopularity = {
+              id: blog.id,
+              name: blog.name,
+              body: blog.body,
+              creator: blog.creator,
+              num_likes: numLikes,
+            };
+
+            blogsWithPopularity.push(blogWithPopularity);
+
+            if(blogsWithPopularity.length == results.length){
+              blogsWithPopularity.sort((a, b) => a.num_likes - b.num_likes);
+              res.status(200).json({ sortedBlogs: blogsWithPopularity, totalItems });
+            }
+          });
+        });
+      });
+    }
+  );
+});
+
 app.get("/pagination", (req, res) => {
   const page = req.query.page;
   const limit = req.query.limit;
